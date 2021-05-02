@@ -1,9 +1,15 @@
 import React from "react";
+import BodyComponent from "./components/bodyComponent";
+import HeaderComponent from "./components/headerComponent";
 
 export default function App() {
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Welcome to GreatCoders with an new React and material-ui vedio</h1>
+    <div>
+      <HeaderComponent />
+      <BodyComponent />
     </div>
   );
 }
+
+// npx create-react-app covid19tracker
+// npm start
