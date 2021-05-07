@@ -5,12 +5,13 @@ import {
   CardContent,
   CircularProgress,
   Grid,
-  IconButton,
-  Toolbar,
   Typography,
 } from "@material-ui/core";
-import { blue, green, red } from "@material-ui/core/colors";
-import { GetGlobalSummary } from "../apiCalls/covid19trackerApi";
+import { blue, blueGrey, green, red } from "@material-ui/core/colors";
+import {
+  GetGlobalSummary,
+  GetRegionalSummary,
+} from "../apiCalls/covid19trackerApi";
 import { renderDisplayCard } from "./commonComponent";
 import CountUp from "react-countup";
 import indianFlag from "./indianFlag.png";
@@ -18,7 +19,10 @@ import Chart from "chart.js";
 
 export default function BodyComponent() {
   const [fetched, setfetcheds] = useState(false);
+  const [graphFeched, setGraphFeched] = useState(false);
   const [globalCases, setGlobalcases] = useState({});
+  const [totalCases, setTotalCases] = useState({});
+  const [indianCase, setIndianCase] = useState([]);
 
   useEffect(
     () =>
@@ -32,16 +36,67 @@ export default function BodyComponent() {
           "New Deaths": Global.NewDeaths,
           "Total Deaths": Global.TotalDeaths,
         });
-        renderGraph();
         setfetcheds(true);
       })
   );
+
+  //useeffect for graph
+  useEffect(() => {
+    !graphFeched &&
+      GetRegionalSummary().then(({ data: { cases_time_series } }) => {
+        const data = {};
+
+        cases_time_series.forEach((item, i) => {
+          const DATE = new Date(item.date);
+          const currentMonth = DATE.getMonth();
+          const currentYear = DATE.getFullYear();
+
+          if (!data[currentYear]) {
+            data[currentYear] = {};
+          }
+          if (!data[currentYear][currentMonth]) {
+            data[currentYear][currentMonth] = +item.dailyconfirmed;
+          } else {
+            data[currentYear][currentMonth] += +item.dailyconfirmed;
+          }
+        });
+        setTotalCases(data);
+        const IndianCase = Object.keys(data["2021"]).map((item, i) => {
+          return data["2021"][item];
+        });
+        setIndianCase(IndianCase);
+        setGraphFeched(true);
+      });
+    renderGraph({
+      labels: [
+        "jan",
+        "feb",
+        "mar",
+        "apr",
+        "may",
+        "jun",
+        "jul",
+        "aug",
+        "sep",
+        "oct",
+        "nov",
+        "dec",
+      ],
+      title: "Covid cases",
+      data: indianCase,
+      bgColor: blue[200],
+      borderColor: blue[800],
+    });
+  });
 
   return (
     <Box mt={2} mr={2} ml={2}>
       <Grid container spacing={1}>
         <Grid item xs={12} sm={12}>
-          <Typography variant='h6' color='primary' gutterBottom={true}>
+          <Typography
+            variant='h6'
+            gutterBottom={true}
+            style={{ color: blue[700] }}>
             Global Status
           </Typography>
         </Grid>
@@ -81,64 +136,60 @@ export default function BodyComponent() {
           )
         )}
       </Grid>
-      <Grid container style={{ marginTop: "40px" }}>
-        <Grid item xs={12} sm={12}>
-          <Typography variant='h6' color='primary' gutterBottom={true}>
-            Regional Status
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={12}>
-          <Card>
-            <Box p={(1, 1)} display='flex'>
-              <IconButton>
+      {/* graph grid / */}
+      <Box mt={4}>
+        <Grid container>
+          <Grid item xs={12} sm={12}>
+            <Typography
+              variant='h6'
+              gutterBottom={true}
+              style={{ color: blue[700] }}>
+              Regional Status
+            </Typography>
+          </Grid>
+          {/* //graph card  */}
+          <Grid item xs={12} sm={12}>
+            <Card>
+              <Box p={(1, 1)} style={{ display: "flex" }}>
                 <img
                   src={indianFlag}
-                  alt='imdian flag'
+                  alt={"Indian flag"}
                   style={{ width: "40px", height: "auto" }}
                 />
-              </IconButton>
-              <Typography variant='body1' component='h6' color='textSecondary'>
-                {" "}
-                india
-              </Typography>
-            </Box>
-            <CardContent>
-              <canvas id='myChart' width='400' height='400'></canvas>
-            </CardContent>
-          </Card>
+                <Typography
+                  variant='body1'
+                  component='h6'
+                  style={{
+                    color: blueGrey[700],
+                    lineHeight: "50px",
+                  }}>
+                  India
+                </Typography>
+              </Box>
+              <CardContent>
+                <canvas id='myChart' width='100%' height='400'></canvas>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
     </Box>
   );
 }
 
-export const renderGraph = () => {
-  var ctx = document.getElementById("myChart").getContext("2d");
-  var myChart = new Chart(ctx, {
-    type: "bar",
+export const renderGraph = ({ labels, title, data, bgColor, borderColor }) => {
+  let ctx = document.getElementById("myChart").getContext("2d");
+  let myChart = new Chart(ctx, {
+    type: "line",
     data: {
-      labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+      labels: labels,
       datasets: [
         {
-          label: "# of Votes",
-          data: [12, 19, 3, 5, 2, 3],
-          backgroundColor: [
-            "rgba(255, 99, 132, 0.2)",
-            "rgba(54, 162, 235, 0.2)",
-            "rgba(255, 206, 86, 0.2)",
-            "rgba(75, 192, 192, 0.2)",
-            "rgba(153, 102, 255, 0.2)",
-            "rgba(255, 159, 64, 0.2)",
-          ],
-          borderColor: [
-            "rgba(255, 99, 132, 1)",
-            "rgba(54, 162, 235, 1)",
-            "rgba(255, 206, 86, 1)",
-            "rgba(75, 192, 192, 1)",
-            "rgba(153, 102, 255, 1)",
-            "rgba(255, 159, 64, 1)",
-          ],
-          borderWidth: 1,
+          label: title,
+          data: data,
+          backgroundColor: bgColor,
+          borderColor: borderColor,
+          borderWidth: 3,
         },
       ],
     },
@@ -146,12 +197,27 @@ export const renderGraph = () => {
       scales: {
         yAxes: [
           {
+            gridLines: {
+              color: "rgba(0, 0, 0, 0)",
+            },
             ticks: {
               beginAtZero: true,
+              callback: function (label, index, dataOfLabels) {
+                return label / 1000000 + "m";
+              },
+            },
+          },
+        ],
+        xAxes: [
+          {
+            gridLines: {
+              color: "rgba(0, 0, 0, 0)",
             },
           },
         ],
       },
+      responsive: true,
+      maintainAspectRatio: false,
     },
   });
   return myChart;

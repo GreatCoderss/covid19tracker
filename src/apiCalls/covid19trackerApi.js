@@ -8,3 +8,6 @@ import axios from "axios";
 export const GetGlobalSummary = () => {
   return axios.get("https://api.covid19api.com/summary");
 };
+export const GetRegionalSummary = () => {
+  return axios.get("https://api.covid19india.org/data.json");
+};

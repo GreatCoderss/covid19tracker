@@ -1,5 +1,4 @@
 import { Card, CardContent, Grid, Typography } from "@material-ui/core";
-import { red } from "@material-ui/core/colors";
 
 export const renderDisplayCard = ({ key, value, index, Color }) => (
   <Grid item xs={6} sm={3} key={index}>
